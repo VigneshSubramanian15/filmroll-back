@@ -414,6 +414,115 @@ export default async function authRoutes(fastify) {
   });
 
   // -------------------------------------------------------------------------
+  // POST /login
+  // -------------------------------------------------------------------------
+  fastify.post('/login', {
+    schema: {
+      description:
+        'Log in with email or phone number + password. Returns user info, studio access list, and a session JWT.',
+      tags: ['User'],
+      body: {
+        type: 'object',
+        required: ['password'],
+        properties: {
+          email: { type: 'string', format: 'email', description: 'User email address' },
+          phone_number: { type: 'integer', description: 'Phone number (digits only)' },
+          password: { type: 'string', minLength: 1, description: 'Account password' },
+        },
+        oneOf: [{ required: ['email'] }, { required: ['phone_number'] }],
+      },
+      response: {
+        200: successEnvelope({
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            email: { type: 'string' },
+            access: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  studio_id: { type: 'integer' },
+                  access: { type: 'array' },
+                  type: { type: 'string' },
+                },
+              },
+            },
+            token: { type: 'string' },
+          },
+        }),
+        400: errorEnvelope,
+        401: errorEnvelope,
+        404: errorEnvelope,
+        500: errorEnvelope,
+      },
+    },
+    handler: async (request, reply) => {
+      const { email, phone_number, password } = request.body;
+
+      const client = await fastify.pg.connect();
+      try {
+        let userQuery;
+        let userParams;
+
+        if (email) {
+          userQuery =
+            'SELECT id, name, email, password FROM users WHERE email = $1 AND is_suspended = FALSE';
+          userParams = [email.toLowerCase()];
+        } else {
+          userQuery =
+            'SELECT id, name, email, password FROM users WHERE phone_number = $1 AND is_suspended = FALSE';
+          userParams = [phone_number];
+        }
+
+        const { rows: userRows } = await client.query(userQuery, userParams);
+
+        if (userRows.length === 0) {
+          return fail(reply, 404, 'Not found', 'No account found with the provided credentials');
+        }
+
+        const user = userRows[0];
+
+        // --- Verify password ------------------------------------------------
+        const passwordValid = await bcrypt.compare(password, user.password);
+        if (!passwordValid) {
+          return fail(reply, 401, 'Unauthorized', 'Invalid password');
+        }
+
+        // --- Fetch studio access --------------------------------------------
+        const { rows: accessRows } = await client.query(
+          'SELECT studio_id, access, type FROM user_studios WHERE user_id = $1',
+          [user.id],
+        );
+
+        // --- Update last_login ----------------------------------------------
+        await client.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
+
+        // --- Build JWT (include first studioId if available) ----------------
+        const tokenPayload = { userId: user.id, userEmail: user.email };
+        if (accessRows.length > 0) {
+          tokenPayload.studioId = accessRows.map((r) => r.studio_id);
+        }
+
+        const token = signToken(tokenPayload);
+
+        return ok(
+          reply,
+          {
+            name: user.name,
+            email: user.email,
+            access: accessRows.length > 0 ? accessRows[0].access : [],
+            token,
+          },
+          'Login successful',
+        );
+      } finally {
+        client.release();
+      }
+    },
+  });
+
+  // -------------------------------------------------------------------------
   // POST /user-add-new-user
   // -------------------------------------------------------------------------
   fastify.post('/user-add-new-user', {

@@ -1,8 +1,8 @@
 import healthRoutes from './health.js';
-import uploadRoutes from './upload.js';
-import userRoutes from './users.js';
-import studioRoutes from './studio.js';
-import projectRoutes from './project.js';
+import uploadRoutes from './upload/index.js';
+import userRoutes from './users/index.js';
+import studioRoutes from './studio/index.js';
+import projectRoutes from './project/index.js';
 
 export default async function routes(fastify, options) {
   await fastify.register(healthRoutes);

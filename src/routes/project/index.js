@@ -9,6 +9,8 @@ import { getProjectClientsSchema } from './schema/getProjectClients.js';
 import { getProjectAlbumsSchema } from './schema/getProjectAlbums.js';
 import { updateProjectClientSchema } from './schema/updateProjectClient.js';
 import { updateProjectAlbumSchema } from './schema/updateProjectAlbum.js';
+import { getProjectPhotosSchema } from './schema/getProjectPhotos.js';
+import { getProjectPhotosCountSchema } from './schema/getProjectPhotosCount.js';
 
 import { createProjectHandler } from './function/createProject.js';
 import { addProjectAlbumHandler } from './function/addProjectAlbum.js';
@@ -21,6 +23,8 @@ import { getProjectClientsHandler } from './function/getProjectClients.js';
 import { getProjectAlbumsHandler } from './function/getProjectAlbums.js';
 import { updateProjectClientHandler } from './function/updateProjectClient.js';
 import { updateProjectAlbumHandler } from './function/updateProjectAlbum.js';
+import { getProjectPhotosHandler } from './function/getProjectPhotos.js';
+import { getProjectPhotosCountHandler } from './function/getProjectPhotosCount.js';
 
 export default async function projectRoutes(fastify) {
   fastify.post('/create-project', {
@@ -76,5 +80,15 @@ export default async function projectRoutes(fastify) {
   fastify.patch('/update-project-album', {
     schema: updateProjectAlbumSchema,
     handler: updateProjectAlbumHandler,
+  });
+
+  fastify.get('/get-photos', {
+    schema: getProjectPhotosSchema,
+    handler: getProjectPhotosHandler,
+  });
+
+  fastify.get('/get-total-count-of-photos', {
+    schema: getProjectPhotosCountSchema,
+    handler: getProjectPhotosCountHandler,
   });
 }

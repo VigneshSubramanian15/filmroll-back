@@ -15,7 +15,7 @@
 13. ~~ Get all project albums ~~
 14. ~~ get all Projects ~~
 15. ~~ Update Clients and Albums ~~
-16. Assign temp images to project
+16. Assign temp images to project - HOLD
 17. Add Project Password - Email and SMS
-18. Update Login with Remember me feature, Add redis to handle blacklist logic
+18. Update Login with Remember me feature, Add redis to handle blacklist logic - Add Studio Check condotion to continue registration.
 19. Send Welcome Email to Studio Collabators there by they can set new password using `user-set-password`

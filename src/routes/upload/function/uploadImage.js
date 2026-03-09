@@ -14,7 +14,7 @@ function validateFilePart(part) {
   return { valid: true };
 }
 
-export async function uploadImageHandler(request, reply) {
+export async function uploadTempImageHandler(request, reply) {
   const fastify = this;
   let part;
   try {

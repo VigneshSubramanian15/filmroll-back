@@ -90,6 +90,16 @@ async function start() {
   try {
     const app = await buildApp();
 
+    process.on('uncaughtException', (err) => {
+      app.log.error({ err }, 'Uncaught exception');
+      if (err.code === 'EPIPE' || err.code === 'ECONNRESET') return;
+      process.exit(1);
+    });
+
+    process.on('unhandledRejection', (reason) => {
+      app.log.error({ err: reason }, 'Unhandled rejection');
+    });
+
     await app.listen({ port: PORT, host: HOST });
 
     console.log('');

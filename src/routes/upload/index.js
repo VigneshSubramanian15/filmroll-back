@@ -1,16 +1,23 @@
-import { uploadImageSchema } from './schema/uploadImage.js';
-import { uploadImagesSchema } from './schema/uploadImages.js';
-import { uploadImageHandler } from './function/uploadImage.js';
-import { uploadImagesHandler } from './function/uploadImages.js';
+import { uploadTempImageSchema } from './schema/uploadImage.js';
+import { uploadTempImagesSchema } from './schema/uploadImages.js';
+import { uploadAlbumImagesSchema } from './schema/uploadAlbumImages.js';
+import { uploadTempImageHandler } from './function/uploadImage.js';
+import { uploadTempImagesHandler } from './function/uploadImages.js';
+import { uploadAlbumImagesHandler } from './function/uploadAlbumImages.js';
 
 export default async function uploadRoutes(fastify, options) {
-  fastify.post('/upload/image', {
-    schema: uploadImageSchema,
-    handler: uploadImageHandler,
+  fastify.post('/upload/temp-image', {
+    schema: uploadTempImageSchema,
+    handler: uploadTempImageHandler,
   });
 
-  fastify.post('/upload/images', {
-    schema: uploadImagesSchema,
-    handler: uploadImagesHandler,
+  fastify.post('/upload/temp-images', {
+    schema: uploadTempImagesSchema,
+    handler: uploadTempImagesHandler,
+  });
+
+  fastify.post('/upload/upload-album-images', {
+    schema: uploadAlbumImagesSchema,
+    handler: uploadAlbumImagesHandler,
   });
 }

@@ -1,4 +1,4 @@
-export const uploadImagesSchema = {
+export const uploadTempImagesSchema = {
   description: 'Upload multiple image files',
   tags: ['Upload'],
   consumes: ['multipart/form-data'],
@@ -19,28 +19,31 @@ export const uploadImagesSchema = {
       properties: {
         success: { type: 'boolean' },
         message: { type: 'string' },
-        uploaded: { type: 'number' },
         data: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              key: { type: 'string' },
-              filename: { type: 'string' },
-              originalName: { type: 'string' },
-              mimetype: { type: 'string' },
-              size: { type: 'number' },
-              url: { type: 'string' },
+          type: 'object',
+          properties: {
+            uploaded: { type: 'number' },
+            data: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  label: { type: 'string' },
+                  mimetype: { type: 'string' },
+                  size: { type: 'number' },
+                  url: { type: 'string' },
+                },
+              },
             },
-          },
-        },
-        errors: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              filename: { type: 'string' },
-              error: { type: 'string' },
+            errors: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  filename: { type: 'string' },
+                  error: { type: 'string' },
+                },
+              },
             },
           },
         },

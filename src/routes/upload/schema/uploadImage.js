@@ -1,4 +1,4 @@
-export const uploadImageSchema = {
+export const uploadTempImageSchema = {
   description: 'Upload a single image file',
   tags: ['Upload'],
   consumes: ['multipart/form-data'],

@@ -1,6 +1,7 @@
 import r2Service from '../../../services/r2.service.js';
 import { allowedImageTypes, allowedImageExtensions, maxFileSize } from '../../../config/r2.js';
 import { ok as sendOk, fail } from '../../../helpers/respond.js';
+import { requireAuth } from '../../../helpers/auth-guard.js';
 import path from 'path';
 
 function validateFilePart(part) {
@@ -14,13 +15,43 @@ function validateFilePart(part) {
   return { valid: true };
 }
 
-export async function uploadTempImagesHandler(request, reply) {
+export async function uploadAlbumImagesHandler(request, reply) {
   const fastify = this;
-  const { systemId } = request.query;
-  const uploadTasks = [];
-  const validationErrors = [];
 
+  // 1. Auth — extract studioId from the JWT
+  const auth = await requireAuth(request, reply);
+  if (!auth) return;
+  const { studioId } = auth;
+
+  const projectId = Number(request.query.projectId);
+
+  // 2. Verify the project belongs to this studio
+  const client = await fastify.pg.connect();
   try {
+    const { rows } = await client.query(
+      `SELECT id FROM projects WHERE id = $1 AND studio_id = $2 AND is_deleted = FALSE`,
+      [projectId, studioId],
+    );
+    if (rows.length === 0) {
+      return fail(
+        reply,
+        403,
+        'Forbidden',
+        'Project does not belong to your studio or does not exist',
+      );
+    }
+
+    // 3. Get the current max sequence_id for this project
+    const seqResult = await client.query(
+      `SELECT COALESCE(MAX(sequence_id), 0) AS max_seq FROM photos WHERE project_id = $1`,
+      [projectId],
+    );
+    let nextSeq = seqResult.rows[0].max_seq + 1;
+
+    // 4. Stream and upload files
+    const uploadTasks = [];
+    const validationErrors = [];
+
     for await (const part of request.parts()) {
       if (part.type !== 'file') continue;
 
@@ -37,11 +68,20 @@ export async function uploadTempImagesHandler(request, reply) {
       const partRef = part;
       const ext = path.extname(partRef.filename);
       const baseName = path.basename(partRef.filename, ext);
-      const customKey = `temp/${Date.now()}-${baseName}${ext}`;
+      const customKey = `studios/${studioId}/projects/${projectId}/${Date.now()}-${baseName}${ext}`;
+      const assignedSeq = nextSeq++;
 
       const task = r2Service
         .uploadFile(partRef, null, customKey)
-        .then((result) => ({ ok: true, data: { ...result, label: partRef.filename } }))
+        .then((result) => ({
+          ok: true,
+          data: {
+            key: result.key,
+            size: result.size,
+            originalName: result.originalName,
+            sequenceId: assignedSeq,
+          },
+        }))
         .catch((err) => {
           const isTooLarge = err.message === 'File too large';
           return {
@@ -71,30 +111,32 @@ export async function uploadTempImagesHandler(request, reply) {
       });
     }
 
-    // Generate signed URLs (2h validity) for each uploaded file
+    // 5. Insert each uploaded photo into the DB
+    const insertQuery = `
+      INSERT INTO photos (name, key, studio_id, project_id, size, sequence_id, compressed_key, compressed_size)
+      VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL)
+    `;
+    for (const item of succeeded) {
+      await client.query(insertQuery, [
+        item.originalName,
+        item.key,
+        studioId,
+        projectId,
+        item.size,
+        item.sequenceId,
+      ]);
+    }
+
+    // 6. Generate signed URLs for each uploaded file
     const responseData = await Promise.all(
-      succeeded.map(async (r) => ({
-        label: r.originalName,
-        mimetype: r.mimetype,
-        size: r.size,
-        url: await r2Service.getSignedUrl(r.key),
+      succeeded.map(async (item) => ({
+        url: await r2Service.getSignedUrl(item.key),
+        label: item.originalName,
+        mimetype: item.mimetype,
+        size: item.size,
+        sequenceId: item.sequenceId,
       })),
     );
-
-    const client = await fastify.pg.connect();
-    try {
-      await Promise.all(
-        succeeded.map((r) =>
-          client.query(
-            `INSERT INTO temp_photos (label, key, size, system_id)
-           VALUES ($1, $2, $3, $4)`,
-            [r.label, r.key, r.size, systemId],
-          ),
-        ),
-      );
-    } finally {
-      client.release();
-    }
 
     return sendOk(
       reply,
@@ -106,7 +148,9 @@ export async function uploadTempImagesHandler(request, reply) {
       `${responseData.length} image(s) uploaded successfully`,
     );
   } catch (error) {
-    fastify.log.error({ err: error }, 'Multiple upload error');
+    fastify.log.error({ err: error }, 'Album upload error');
     return fail(reply, 500, 'Upload failed', error.message);
+  } finally {
+    client.release();
   }
 }

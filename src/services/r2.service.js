@@ -1,4 +1,5 @@
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Upload } from '@aws-sdk/lib-storage';
 import { r2Config } from '../config/r2.js';
 import { randomUUID } from 'crypto';
@@ -35,6 +36,10 @@ class R2Service {
         reject(new Error('File too large'));
       });
 
+      pass.on('error', (err) => {
+        if (err.message !== '__truncated__') reject(err);
+      });
+
       file.file.pipe(pass);
 
       const upload = new Upload({
@@ -68,6 +73,14 @@ class R2Service {
         )
         .catch(reject);
     });
+  }
+
+  async getSignedUrl(key, expiresIn = 7200) {
+    const command = new GetObjectCommand({
+      Bucket: r2Config.bucketName,
+      Key: key,
+    });
+    return getSignedUrl(this.client, command, { expiresIn });
   }
 
   async deleteFile(key) {

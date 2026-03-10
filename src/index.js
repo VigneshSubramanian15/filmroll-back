@@ -50,7 +50,7 @@ async function buildApp() {
       tags: [
         { name: 'General', description: 'General endpoints' },
         { name: 'Health', description: 'Health check endpoints' },
-        { name: 'Upload', description: 'File upload endpoints' },
+        { name: 'Photos', description: 'Photo management endpoints' },
         { name: 'User', description: 'Authentication & user registration' },
         { name: 'Studio', description: 'Studio management' },
       ],

@@ -1,15 +1,15 @@
 import healthRoutes from './health.js';
-import uploadRoutes from './upload/index.js';
 import userRoutes from './users/index.js';
 import studioRoutes from './studio/index.js';
 import projectRoutes from './project/index.js';
+import photosRoutes from './photos/index.js';
 
 export default async function routes(fastify, options) {
   await fastify.register(healthRoutes);
-  await fastify.register(uploadRoutes);
   await fastify.register(userRoutes);
   await fastify.register(studioRoutes);
   await fastify.register(projectRoutes);
+  await fastify.register(photosRoutes);
 
   fastify.get('/', {
     schema: {

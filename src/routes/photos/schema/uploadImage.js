@@ -1,6 +1,6 @@
 export const uploadTempImageSchema = {
   description: 'Upload a single image file',
-  tags: ['Upload'],
+  tags: ['Photos'],
   consumes: ['multipart/form-data'],
   response: {
     200: {

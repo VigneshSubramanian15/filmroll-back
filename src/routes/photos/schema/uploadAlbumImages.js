@@ -2,7 +2,7 @@ import { successEnvelope, errorEnvelope } from '../../../helpers/schema.js';
 
 export const uploadAlbumImagesSchema = {
   description: 'Upload multiple images to a project album',
-  tags: ['Upload'],
+  tags: ['Photos'],
   security: [{ bearerAuth: [] }],
   consumes: ['multipart/form-data'],
   querystring: {
@@ -12,6 +12,10 @@ export const uploadAlbumImagesSchema = {
       projectId: {
         type: 'integer',
         description: 'ID of the project to upload images to',
+      },
+      folderId: {
+        type: 'integer',
+        description: 'Optional ID of the specific folder to upload to (root if omitted)',
       },
     },
   },

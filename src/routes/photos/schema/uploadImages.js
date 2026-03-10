@@ -1,6 +1,6 @@
 export const uploadTempImagesSchema = {
   description: 'Upload multiple image files',
-  tags: ['Upload'],
+  tags: ['Photos'],
   consumes: ['multipart/form-data'],
   querystring: {
     type: 'object',

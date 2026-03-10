@@ -1,4 +1,23 @@
 -- ============================================================
+-- project_folders
+-- ============================================================
+CREATE TABLE IF NOT EXISTS project_folders (
+    id          SERIAL PRIMARY KEY,
+    name        TEXT NOT NULL,
+    project_id  INT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    parent_id   INT REFERENCES project_folders(id) ON DELETE CASCADE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_project_folders_project_id ON project_folders (project_id);
+CREATE INDEX IF NOT EXISTS idx_project_folders_parent_id ON project_folders (parent_id);
+
+CREATE OR REPLACE TRIGGER trg_project_folders_updated_at
+    BEFORE UPDATE ON project_folders
+    FOR EACH ROW EXECUTE FUNCTION trigger_set_updated_at();
+
+-- ============================================================
 -- photos
 -- ============================================================
 CREATE TABLE IF NOT EXISTS photos (
@@ -7,6 +26,7 @@ CREATE TABLE IF NOT EXISTS photos (
     key                 TEXT        NOT NULL UNIQUE,
     studio_id           INT         NOT NULL REFERENCES studios (id) ON DELETE CASCADE,
     project_id          INT         NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
+    folder_id           INT         REFERENCES project_folders (id) ON DELETE CASCADE,
     size                INT,
     compressed_key      TEXT        UNIQUE,
     compressed_size     INT,
@@ -20,6 +40,7 @@ CREATE TABLE IF NOT EXISTS photos (
 
 CREATE INDEX IF NOT EXISTS idx_photos_studio_id   ON photos (studio_id);
 CREATE INDEX IF NOT EXISTS idx_photos_project_id  ON photos (project_id);
+CREATE INDEX IF NOT EXISTS idx_photos_folder_id   ON photos (folder_id);
 CREATE INDEX IF NOT EXISTS idx_photos_key         ON photos (key);
 
 CREATE OR REPLACE TRIGGER trg_photos_updated_at

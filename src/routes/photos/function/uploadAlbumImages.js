@@ -24,6 +24,7 @@ export async function uploadAlbumImagesHandler(request, reply) {
   const { studioId } = auth;
 
   const projectId = Number(request.query.projectId);
+  const folderId = request.query.folderId ? Number(request.query.folderId) : null;
 
   // 2. Verify the project belongs to this studio
   const client = await fastify.pg.connect();
@@ -39,6 +40,23 @@ export async function uploadAlbumImagesHandler(request, reply) {
         'Forbidden',
         'Project does not belong to your studio or does not exist',
       );
+    }
+    console.log(`Project ${projectId} verified for studio ${studioId}`, folderId);
+    // Verify folder belongs to the project (if folderId is provided)
+    if (folderId) {
+      console.log(`test condition`, folderId);
+      const { rows: folderRows } = await client.query(
+        `SELECT id FROM project_folders WHERE id = $1 AND project_id = $2`,
+        [folderId, projectId],
+      );
+      if (folderRows.length === 0) {
+        return fail(
+          reply,
+          400,
+          'Bad Request',
+          'Folder does not exist or does not belong to this project',
+        );
+      }
     }
 
     // 3. Get the current max sequence_id for this project
@@ -68,7 +86,9 @@ export async function uploadAlbumImagesHandler(request, reply) {
       const partRef = part;
       const ext = path.extname(partRef.filename);
       const baseName = path.basename(partRef.filename, ext);
-      const customKey = `studios/${studioId}/projects/${projectId}/${Date.now()}-${baseName}${ext}`;
+
+      const r2Path = folderId ? `${folderId}` : `root`;
+      const customKey = `studios/${studioId}/projects/${projectId}/${r2Path}/${Date.now()}-${baseName}${ext}`;
       const assignedSeq = nextSeq++;
 
       const task = r2Service
@@ -113,8 +133,8 @@ export async function uploadAlbumImagesHandler(request, reply) {
 
     // 5. Insert each uploaded photo into the DB
     const insertQuery = `
-      INSERT INTO photos (name, key, studio_id, project_id, size, sequence_id, compressed_key, compressed_size)
-      VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL)
+      INSERT INTO photos (name, key, studio_id, project_id, folder_id, size, sequence_id, compressed_key, compressed_size)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NULL)
     `;
     for (const item of succeeded) {
       await client.query(insertQuery, [
@@ -122,6 +142,7 @@ export async function uploadAlbumImagesHandler(request, reply) {
         item.key,
         studioId,
         projectId,
+        folderId,
         item.size,
         item.sequenceId,
       ]);

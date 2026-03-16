@@ -28,11 +28,11 @@ export async function googleAuthHandler(request, reply) {
 
   const pgClient = await fastify.pg.connect();
   try {
-    // Look up existing user by google_id or email
+    // Look up existing user by auth_provider_id or email
     const { rows: userRows } = await pgClient.query(
-      `SELECT id, name, email, google_id, auth_provider
+      `SELECT id, name, email, auth_provider_id, auth_provider
        FROM users
-       WHERE google_id = $1 OR email = $2
+       WHERE auth_provider_id = $1 OR email = $2
        LIMIT 1`,
       [googleId, email.toLowerCase()],
     );
@@ -43,13 +43,12 @@ export async function googleAuthHandler(request, reply) {
     if (userRows.length > 0) {
       user = userRows[0];
 
-      // Link google_id if user exists by email but hasn't linked Google yet
-      if (!user.google_id) {
-        await pgClient.query('UPDATE users SET google_id = $1, auth_provider = $2 WHERE id = $3', [
-          googleId,
-          user.auth_provider === 'local' ? 'local' : user.auth_provider,
-          user.id,
-        ]);
+      // Link auth_provider_id if user exists by email but hasn't linked Google yet
+      if (!user.auth_provider_id) {
+        await pgClient.query(
+          'UPDATE users SET auth_provider_id = $1, auth_provider = $2 WHERE id = $3',
+          [googleId, user.auth_provider === 'local' ? 'local' : user.auth_provider, user.id],
+        );
       }
 
       // Update last_login
@@ -57,7 +56,7 @@ export async function googleAuthHandler(request, reply) {
     } else {
       // Auto-register new user
       const { rows: newRows } = await pgClient.query(
-        `INSERT INTO users (name, email, google_id, auth_provider, last_login)
+        `INSERT INTO users (name, email, auth_provider_id, auth_provider, last_login)
          VALUES ($1, $2, $3, 'google', NOW())
          RETURNING id, name, email`,
         [name, email.toLowerCase(), googleId],

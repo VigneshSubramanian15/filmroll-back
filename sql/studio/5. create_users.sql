@@ -11,13 +11,15 @@ END $$;
 CREATE TABLE IF NOT EXISTS users (
     id              SERIAL      PRIMARY KEY,
     name            TEXT,
-    password        TEXT        NOT NULL,
+    password        TEXT,
     email           TEXT        NOT NULL UNIQUE,
     phone_number    BIGINT,
     phone_number_code BIGINT,
     phone_number_verified    BOOLEAN     NOT NULL DEFAULT FALSE,
     is_whatsapp     BOOLEAN     NOT NULL DEFAULT FALSE,
     is_suspended    BOOLEAN     NOT NULL DEFAULT FALSE,
+    google_id       TEXT        UNIQUE,
+    auth_provider   TEXT        NOT NULL DEFAULT 'local',
     last_login      TIMESTAMPTZ NOT NULL,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -25,6 +27,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_email      ON users (email);
 CREATE INDEX IF NOT EXISTS idx_users_number     ON users (phone_number) WHERE phone_number IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_users_google_id  ON users (google_id) WHERE google_id IS NOT NULL;
 
 CREATE OR REPLACE TRIGGER trg_users_updated_at
     BEFORE UPDATE ON users

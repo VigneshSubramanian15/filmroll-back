@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
+import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import scalarFastifyApiReference from '@scalar/fastify-api-reference';
 import postgresPlugin from './plugins/postgres.js';
@@ -22,6 +23,11 @@ async function buildApp() {
         },
       },
     },
+  });
+
+  await fastify.register(cors, {
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    credentials: true,
   });
 
   await fastify.register(authPlugin);

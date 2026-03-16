@@ -1,28 +1,18 @@
 import { successEnvelope, errorEnvelope } from '../../../helpers/schema.js';
 
-export const loginSchema = {
+export const googleAuthSchema = {
   description:
-    'Log in with email or phone number + password. Returns user info, studio access list, and a session JWT.',
+    'Authenticate with Google. Accepts a Google ID token, verifies it, and returns user info + session JWT. Auto-registers new users.',
   tags: ['User'],
   body: {
     type: 'object',
-    required: ['password'],
+    required: ['idToken'],
     properties: {
-      email: {
+      idToken: {
         type: 'string',
-        default: 'maaran@vs7.in',
-        format: 'email',
-        description: 'User email address',
+        description: 'Google Sign-In credential (ID token JWT)',
       },
-      password: {
-        type: 'string',
-        default: 'ilamaaran',
-        minLength: 1,
-        description: 'Account password',
-      },
-      phone_number: { type: 'integer', description: 'Phone number (digits only)' },
     },
-    oneOf: [{ required: ['email'] }, { required: ['phone_number'] }],
   },
   response: {
     200: successEnvelope({
@@ -36,13 +26,13 @@ export const loginSchema = {
           items: {
             type: 'object',
             properties: {
-              studio_id: { type: 'integer' },
-              access: { type: 'array' },
-              type: { type: 'string' },
+              module: { type: 'string' },
+              limit: { type: 'string' },
             },
           },
         },
         token: { type: 'string' },
+        newUser: { type: 'boolean' },
         studio_name: { type: 'string' },
         logo_url: { type: 'string' },
         studios: {
@@ -60,7 +50,6 @@ export const loginSchema = {
     }),
     400: errorEnvelope,
     401: errorEnvelope,
-    404: errorEnvelope,
     500: errorEnvelope,
   },
 };

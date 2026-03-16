@@ -62,7 +62,6 @@ export async function loginHandler(request, reply) {
     }
 
     const token = signToken(tokenPayload);
-    console.log('>>>>>>>>>>>>>>>> ', accessRows);
     return ok(
       reply,
       accessRows.length > 1

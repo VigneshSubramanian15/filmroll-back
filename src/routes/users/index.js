@@ -7,6 +7,7 @@ import { userVerifyPhoneNumberSchema } from './schema/userVerifyPhoneNumber.js';
 import { loginSchema } from './schema/login.js';
 import { userAddNewUserSchema } from './schema/userAddNewUser.js';
 import { userSelectStudioSchema } from './schema/userSelectStudio.js';
+import { googleAuthSchema } from './schema/googleAuth.js';
 
 import { userSignupHandler } from './function/userSignup.js';
 import { userVerifyHandler } from './function/userVerify.js';
@@ -17,6 +18,7 @@ import { userVerifyPhoneNumberHandler } from './function/userVerifyPhoneNumber.j
 import { loginHandler } from './function/login.js';
 import { userAddNewUserHandler } from './function/userAddNewUser.js';
 import { userSelectStudioHandler } from './function/userSelectStudio.js';
+import { googleAuthHandler } from './function/googleAuth.js';
 
 export default async function authRoutes(fastify) {
   fastify.post('/user-signup', {
@@ -62,5 +64,10 @@ export default async function authRoutes(fastify) {
   fastify.post('/user-select-studio', {
     schema: userSelectStudioSchema,
     handler: userSelectStudioHandler,
+  });
+
+  fastify.post('/auth/google', {
+    schema: googleAuthSchema,
+    handler: googleAuthHandler,
   });
 }
